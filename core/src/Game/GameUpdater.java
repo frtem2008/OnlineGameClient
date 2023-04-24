@@ -1,25 +1,19 @@
-package Client;
+package Game;
 
-import GameObjects.Game;
 import GameObjects.Player;
-import Online.Connection;
-import Online.Message;
-import Online.MessagePayloadObjects.PayloadStringData;
-import Online.MessagePayloadObjects.PlayerMessagesPayloadObjects.PayloadLoginData;
-import Online.MessagePayloadObjects.ServerMessagesPayloadObjects.PayloadGameFullData;
-import Online.MessagePayloadObjects.ServerMessagesPayloadObjects.PayloadGameTickData;
-import Online.MessageType;
-import Online.OnlinePlayer;
-import ResourceManager.ResourceManager;
-import Timer.Timer;
-import com.badlogic.gdx.ApplicationAdapter;
+import Online.Base.Connection;
+import Online.Base.Message;
+import Online.Base.MessageType;
+import Online.MessagePayloadObjects.CommonPayloadObjects.PayloadStringData;
+import Online.MessagePayloadObjects.PlayerPayloadObjects.PayloadLoginData;
+import Online.MessagePayloadObjects.PlayerPayloadObjects.PayloadSpeedXY;
+import Online.MessagePayloadObjects.ServerPayloadObjects.PayloadGameFullData;
+import Online.MessagePayloadObjects.ServerPayloadObjects.PayloadGameTickData;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.awt.*;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Random;
@@ -27,63 +21,39 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SoulKnightGame extends ApplicationAdapter {
-    private OrthographicCamera camera;
-    private SpriteBatch batch;
-
+public class GameUpdater implements Closeable {
+    private final OnlinePlayer player;
+    private final AtomicBoolean closed;
+    private final CopyOnWriteArrayList<Thread> toInterrupt;
+    private final GameRenderer renderer;
     private Game game;
-    private OnlinePlayer player;
-    private CopyOnWriteArrayList<Thread> toInterrupt;
-    private AtomicBoolean closed;
 
-    private void initGame() {
-        game = new Game();
-    }
+    public GameUpdater(Game game, GameRenderer renderer) {
+        this.game = game;
+        this.renderer = renderer;
 
-    private OnlinePlayer connect(String ip, int port, double x, double y, int w, int h, Color color, String nick) {
-        Connection server = new Connection(ip, port);
-        OnlinePlayer player = new OnlinePlayer(server, nick, Thread.currentThread());
-        PayloadLoginData loginData = new PayloadLoginData(nick, x, y, w, h, color);
-        Message loginMessage = new Message(MessageType.LOGIN_DATA, loginData);
-        player.player = new Player("INVALID_LOGIN_PLAYER_NICKNAME", x, y, w, h, color);
-        System.out.println("Connected to server!");
-
-        try {
-            player.writeMessage(loginMessage);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("Logged in with nickname: " + nick);
-
-        return player;
-    }
-
-    @Override
-    public void create() {
-        // TODO: 23.04.2023 Load some resources here
-        toInterrupt = new CopyOnWriteArrayList<>();
-        ResourceManager.init();
-        ResourceManager.loadAll();
+        //connect to server
         Random r = new Random(System.currentTimeMillis());
         player = connect("192.168.0.106", 26780, 152.5, 35.6, 90, 60, new Color(r.nextInt()), "Livefish" + Math.random());
-        initGame();
 
-        camera = new OrthographicCamera();
-        camera.setToOrtho(true, 800, 480);
-        batch = new SpriteBatch();
+        //handle messages
         ArrayBlockingQueue<Message> messageQueue = new ArrayBlockingQueue<>(150, true);
-        closed = new AtomicBoolean(false);
+        this.closed = new AtomicBoolean(false);
+        this.toInterrupt = new CopyOnWriteArrayList<>();
 
         Thread serverMessagesHandleThread = new Thread(() -> {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     Message msg = player.readMessage();
-                    messageQueue.add(msg);
+                    messageQueue.put(msg);
                 }
             } catch (IOException e) {
-                dispose();
+                // TODO: 24.04.2023 Reconnect maybe
+                close();
             } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         });
         serverMessagesHandleThread.start();
@@ -94,10 +64,10 @@ public class SoulKnightGame extends ApplicationAdapter {
                 int speedSentCount = 0;
                 double lastUpdate = 0;
                 final long REQUEST_TIMEOUT = 10;
-                Timer timer = new Timer();
 
                 while (!Thread.currentThread().isInterrupted()) {
                     double sx, sy;
+                    // TODO: 24.04.2023 replace this with keyboard input
                     if (Gdx.input.isKeyPressed(Input.Keys.A)) {
                         sx = -0.1;
                     } else if (Gdx.input.isKeyPressed(Input.Keys.D)) {
@@ -118,24 +88,42 @@ public class SoulKnightGame extends ApplicationAdapter {
                         System.out.println("Speed sent" + (speedSentCount++) + " times");
                     }
 
-                    if (timer.getGlobalTimeMillis() - lastUpdate > REQUEST_TIMEOUT) {
+                    if (System.currentTimeMillis() - lastUpdate > REQUEST_TIMEOUT) {
                         /* read client data */
+
                         // TODO: 20.04.2023 Priority queue for messages
-                        lastUpdate = timer.getGlobalTimeMillis();
-                        handleMessage(messageQueue.take(), player);
+                        lastUpdate = System.currentTimeMillis();
+                        Message toHandle = messageQueue.take();
+                        handleMessage(toHandle, player);
                     }
-                    //TIMER TICKS HERE, because main graphics thread blocks if player presses f11, graphics thread yields until key is released, so timer fails to tick and messages are not handled
-                    timer.tick();
                 }
             } catch (IOException | InterruptedException e) {
                 Thread.currentThread().interrupt();
-                dispose();
+                close();
             }
         });
         messageSendingThread.start();
 
         toInterrupt.add(serverMessagesHandleThread);
         toInterrupt.add(messageSendingThread);
+    }
+
+    private OnlinePlayer connect(String ip, int port, double x, double y, int w, int h, Color color, String nick) {
+        Connection server = new Connection(ip, port);
+        OnlinePlayer player = new OnlinePlayer(server, nick, Thread.currentThread());
+        PayloadLoginData loginData = new PayloadLoginData(nick, x, y, w, h, color);
+        Message loginMessage = new Message(MessageType.LOGIN_DATA, loginData);
+        player.player = new Player("INVALID_LOGIN_PLAYER_NICKNAME", x, y, w, h, color);
+        System.out.println("Connected to server!");
+
+        try {
+            player.writeMessage(loginMessage);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Logged in with nickname: " + nick);
+
+        return player;
     }
 
     private void handleMessage(Message msg, OnlinePlayer player) throws IOException {
@@ -161,10 +149,12 @@ public class SoulKnightGame extends ApplicationAdapter {
             case GAME_DATA_TICK -> {
                 PayloadGameTickData gameData = (PayloadGameTickData) msg.payload;
                 game.resolveUpdate(gameData.game);
+                renderer.setToRender(game);
             }
             case GAME_DATA_FULL -> {
                 PayloadGameFullData completeGameData = (PayloadGameFullData) msg.payload;
                 game = completeGameData.game;
+                renderer.setToRender(game);
             }
             default -> throw new IllegalStateException("Unexpected value: " + msg.type);
         }
@@ -172,30 +162,65 @@ public class SoulKnightGame extends ApplicationAdapter {
 
 
     @Override
-    public void render() {
-        ScreenUtils.clear(0, 0, 0.2f, 1);
-        camera.update();
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        game.draw(batch);
-        batch.end();
-    }
-
-    @Override
-    public void dispose() {
+    public void close() {
         if (closed.get())
             return;
         closed.set(true);
-        ResourceManager.disposeAll();
-        batch.dispose();
         for (Thread thread : toInterrupt) {
             thread.interrupt();
         }
         try {
             player.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        Gdx.app.log("Game updater", "closed");
+    }
+
+
+    private static class OnlinePlayer implements Closeable {
+        private final Connection connection;
+        public final Thread playerThread;
+        public final String nickname;
+        public Player player;
+
+        public OnlinePlayer(Connection connection, String nickname, Thread clientThread) {
+            this.connection = connection;
+            this.nickname = nickname;
+            this.playerThread = clientThread;
+        }
+
+        public void sendSpeed() throws IOException {
+            Message msg = new Message(MessageType.SPEED_XY, new PayloadSpeedXY(player.getSpeedX(), player.getSpeedY()));
+            connection.writeMessage(msg);
+        }
+
+        public void setSpeed(double speedX, double speedY) {
+            player.setSpeedX(speedX);
+            player.setSpeedY(speedY);
+        }
+
+        public void writeMessage(Message msg) throws IOException {
+            connection.writeMessage(msg);
+        }
+
+        public Message readMessage() throws IOException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            return connection.readMessage();
+        }
+
+
+        @Override
+        public void close() throws IOException {
+            if (playerThread != null)
+                playerThread.interrupt();
+            connection.close();
+        }
+
+        @Override
+        public String toString() {
+            return "OnlinePlayer{" +
+                    "nickname='" + nickname + '\'' +
+                    '}';
         }
     }
 }

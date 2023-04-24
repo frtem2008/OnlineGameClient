@@ -13,11 +13,10 @@ public class ResourceManager {
     private static Map<String, Sound> sounds;
     private static Map<String, Music> music;
 
-    public static void init() {
-    }
-
     private static Texture loadTexture(String filePath) {
-        return new Texture(Gdx.files.internal(filePath));
+        Texture loaded = new Texture(Gdx.files.internal(filePath));
+        loaded.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        return loaded;
     }
 
     private static Sound loadSound(String filePath) {
@@ -69,6 +68,7 @@ public class ResourceManager {
 
     public static void loadMusic() {
         music = new HashMap<>();
+
         /* Load some music */
         addMusic("Background", "Close to you.mp3");
     }

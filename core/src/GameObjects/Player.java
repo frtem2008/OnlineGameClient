@@ -1,5 +1,7 @@
 package GameObjects;
 
+import GameObjects.Base.GameObject;
+import GameObjects.Base.GameObjectType;
 import ResourceManager.ResourceManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
@@ -69,8 +71,10 @@ public class Player extends GameObject {
     }
 
     @Override
-    public void draw(SpriteBatch batch) {
-        batch.draw(ResourceManager.getTexByName("Player"), (float) x, (float) y, (float) w, (float) h);
+    public void draw(SpriteBatch batcher) {
+        batcher.begin();
+        batcher.draw(ResourceManager.getTexByName("Player"), (float) x, (float) y, (float) w, (float) h);
+        batcher.end();
     }
 
     @Override

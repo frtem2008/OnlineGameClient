@@ -1,7 +1,6 @@
-package Online;
+package Online.Base;
 
-import Online.MessagePayloadObjects.MessagePayload;
-import Online.MessagePayloadObjects.PayloadStringData;
+import Online.MessagePayloadObjects.CommonPayloadObjects.PayloadStringData;
 
 import java.io.Externalizable;
 import java.util.Objects;

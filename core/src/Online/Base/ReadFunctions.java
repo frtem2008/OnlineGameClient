@@ -1,4 +1,4 @@
-package Online;
+package Online.Base;
 
 import java.io.Externalizable;
 import java.io.ObjectInput;

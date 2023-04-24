@@ -1,7 +1,7 @@
-package Online.MessagePayloadObjects.ServerMessagesPayloadObjects;
+package Online.MessagePayloadObjects.ServerPayloadObjects;
 
-import GameObjects.Game;
-import Online.MessagePayloadObjects.MessagePayload;
+import Game.Game;
+import Online.Base.MessagePayload;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -18,6 +18,7 @@ public class PayloadGameFullData extends MessagePayload {
     public PayloadGameFullData(Game game) {
         this.game = game;
     }
+
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {

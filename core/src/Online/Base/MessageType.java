@@ -1,12 +1,11 @@
-package Online;
+package Online.Base;
 
-import Online.MessagePayloadObjects.MessagePayload;
-import Online.MessagePayloadObjects.PayloadInvalid;
-import Online.MessagePayloadObjects.PayloadStringData;
-import Online.MessagePayloadObjects.PlayerMessagesPayloadObjects.PayloadLoginData;
-import Online.MessagePayloadObjects.PlayerMessagesPayloadObjects.PayloadSpeedXY;
-import Online.MessagePayloadObjects.ServerMessagesPayloadObjects.PayloadGameFullData;
-import Online.MessagePayloadObjects.ServerMessagesPayloadObjects.PayloadGameTickData;
+import Online.MessagePayloadObjects.CommonPayloadObjects.PayloadInvalid;
+import Online.MessagePayloadObjects.CommonPayloadObjects.PayloadStringData;
+import Online.MessagePayloadObjects.PlayerPayloadObjects.PayloadLoginData;
+import Online.MessagePayloadObjects.PlayerPayloadObjects.PayloadSpeedXY;
+import Online.MessagePayloadObjects.ServerPayloadObjects.PayloadGameFullData;
+import Online.MessagePayloadObjects.ServerPayloadObjects.PayloadGameTickData;
 
 public enum MessageType {
 

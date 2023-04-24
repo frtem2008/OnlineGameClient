@@ -1,4 +1,4 @@
-package GameObjects;
+package GameObjects.Base;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 

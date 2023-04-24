@@ -1,4 +1,6 @@
-package Online.MessagePayloadObjects;
+package Online.MessagePayloadObjects.CommonPayloadObjects;
+
+import Online.Base.MessagePayload;
 
 import java.io.IOException;
 import java.io.ObjectInput;

@@ -1,6 +1,6 @@
-package Online;
+package Online.Base;
 
-import Online.MessagePayloadObjects.PayloadTable;
+import Online.MessagePayloadObjects.PayloadObjectsCreateReadFunctionsTable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -75,7 +75,7 @@ public class Connection implements Closeable {
             Message msg = new Message();
             String messageHeader = reader.readUTF();
             msg.type = MessageType.valueOf(messageHeader);
-            ReadFunctions functions = PayloadTable.payloadFunctionsMap.get(msg.type.payload);
+            ReadFunctions functions = PayloadObjectsCreateReadFunctionsTable.payloadFunctionsMap.get(msg.type.payload);
             if (functions != null) {
                 msg.payload = functions.constructor().newInstance();
                 functions.readMethod().invoke(msg.payload, reader);
@@ -91,7 +91,7 @@ public class Connection implements Closeable {
 
     @Override
     public String toString() {
-        return "Online.Connection{" + "ip=" + getIp() + '}';
+        return "Online.Base.Connection{" + "ip=" + getIp() + '}';
     }
 
 

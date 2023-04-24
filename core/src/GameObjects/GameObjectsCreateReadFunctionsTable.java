@@ -1,12 +1,13 @@
 package GameObjects;
 
-import Online.ReadFunctions;
+import GameObjects.Base.GameObject;
+import Online.Base.ReadFunctions;
 
 import java.util.HashMap;
 
-import static Online.ReadFunctions.fromClass;
+import static Online.Base.ReadFunctions.fromClass;
 
-public class GameObjectFunctionsTable {
+public class GameObjectsCreateReadFunctionsTable {
     public static final HashMap<Class<? extends GameObject>, ReadFunctions> gameObjectFunctionsMap = new HashMap<>();
 
     static {

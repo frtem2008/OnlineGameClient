@@ -1,5 +1,7 @@
 package GameObjects;
 
+import GameObjects.Base.GameObject;
+import GameObjects.Base.GameObjectType;
 import ResourceManager.ResourceManager;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
@@ -29,10 +31,11 @@ public class Block extends GameObject {
         this.color = color;
     }
 
-
     @Override
-    public void draw(SpriteBatch batch) {
-        batch.draw(ResourceManager.getTexByName("Block"), (float) x, (float) y, (float) w, (float) h);
+    public void draw(SpriteBatch batcher) {
+        batcher.begin();
+        batcher.draw(ResourceManager.getTexByName("Block"), (float) x, (float) y, (float) w, (float) h);
+        batcher.end();
     }
 
     @Override

@@ -1,6 +1,6 @@
-package Online.MessagePayloadObjects.PlayerMessagesPayloadObjects;
+package Online.MessagePayloadObjects.PlayerPayloadObjects;
 
-import Online.MessagePayloadObjects.MessagePayload;
+import Online.Base.MessagePayload;
 
 import java.io.IOException;
 import java.io.ObjectInput;

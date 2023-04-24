@@ -1,4 +1,4 @@
-package Online.MessagePayloadObjects;
+package Online.Base;
 
 import java.io.Externalizable;
 import java.io.IOException;
